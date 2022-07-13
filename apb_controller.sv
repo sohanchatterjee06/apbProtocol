@@ -8,12 +8,12 @@ module apb_controller #(parameter addr_width=4, data_width=128, mem_data=8) (PCL
 	input [data_width-1:0] PWDATA; 									//input data from master to write for controller to be used by slave
 
 	//output to master
-	output reg [mem_data-1:0] PRDATA; 							//output data from controller to be read by master
+	output reg [data_width-1:0] PRDATA; 							//output data from controller to be read by master
 	output reg PREADY, PSLVERR; 						//tranfer of PREADY, PSLVERR and extra ack to show data is received 
 
 	//input from slave
 	input m_ready, m_error;;          								//input response from slave to transfer to master 
-	input [data_width-1:0] m_rdata;  									//input of data from slave to controller to be read by master
+	input [mem_data-1:0] m_rdata;  									//input of data from slave to controller to be read by master
 	
 	//output to slave
 	output reg [(addr_width+4)-1:0] s_addr; 						//output addr from controller to write to in slave
