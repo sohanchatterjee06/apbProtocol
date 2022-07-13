@@ -8,12 +8,12 @@ module apb_controller #(parameter addr_width=4, data_width=128, mem_data=8) (PCL
 	input [data_width-1:0] PWDATA; 									//input data from master to write for controller to be used by slave
 
 	//output to master
-	output reg [data_width-1:0] m_rdata; 							//output data from controller to be read by master
-	output reg m_ready, m_error /*,m_dack*/; 						//tranfer of PREADY, PSLVERR and extra ack to show data is received 
+	output reg [mem_data-1:0] PRDATA; 							//output data from controller to be read by master
+	output reg PREADY, PSLVERR; 						//tranfer of PREADY, PSLVERR and extra ack to show data is received 
 
 	//input from slave
-	input PREADY, PSLVERR;          								//input response from slave to transfer to master 
-	input [mem_data-1:0] PRDATA;  									//input of data from slave to controller to be read by master
+	input m_ready, m_error;;          								//input response from slave to transfer to master 
+	input [data_width-1:0] m_rdata;  									//input of data from slave to controller to be read by master
 	
 	//output to slave
 	output reg [(addr_width+4)-1:0] s_addr; 						//output addr from controller to write to in slave
@@ -68,7 +68,7 @@ module apb_controller #(parameter addr_width=4, data_width=128, mem_data=8) (PCL
 						endcase
 				   end
 			ACCESS: begin
-						case({PENABLE, PSELx, m_ready})				//in ACCESS, different cases of {PENABLE, PSELx, mready} are considered
+						case({PENABLE, PSELx, PREADY})				//in ACCESS, different cases of {PENABLE, PSELx, mready} are considered
 							3'b111: nst= SETUP;
 							3'b110: nst= ACCESS;
 							3'b010: nst=SETUP;
@@ -88,7 +88,7 @@ module apb_controller #(parameter addr_width=4, data_width=128, mem_data=8) (PCL
 			case(pst)
 				
 				ACCESS:	begin
-							case ({PWRITE,PREADY})
+							case ({PWRITE,m_ready})
 								
 								2'b11: begin             			//write and ready
 									s_cs='h1;
@@ -98,15 +98,15 @@ module apb_controller #(parameter addr_width=4, data_width=128, mem_data=8) (PCL
 									count_en='h1;
 									s_addr={temp_addr,count[3:0]};									
 									s_wdata=temp_wdata[((count[3:0])*8)+:8];			
-									m_rdata='hz;
+									PRDATA='hz;
 									if(count>'d15) begin	
-										m_ready=PREADY;
+										PREADY=m_ready;
 										count_en='h0;
 									end
 									else begin
-										m_ready='h0;
+										PREADY='h0;
 									end
-									m_error=PSLVERR;
+									PSLVERR=m_error;
 								end 
 								
 								2'b10: begin            			//PREADY always high from memory so this hasn't been handled
@@ -114,9 +114,9 @@ module apb_controller #(parameter addr_width=4, data_width=128, mem_data=8) (PCL
 									s_addr='hz;
 									s_write='hz;
 									s_wdata<='hz; 
-									m_rdata='hz;
-									m_ready='h1;
-									m_error=PSLVERR;
+									PRDATA='hz;
+									PREADY='h1;
+									PSLVERR=m_error;
 								end 
 								
 								2'b01: begin            			//read and ready
@@ -125,17 +125,17 @@ module apb_controller #(parameter addr_width=4, data_width=128, mem_data=8) (PCL
 									count_rst='h1;
 									count_en='h1;								
 									s_addr={temp_addr,count[3:0]};
-									temp_rdata[((count[3:0])*8)+:8]= PRDATA;
+									temp_rdata[((count[3:0])*8)+:8]= m_rdata;
 									if(count>'d15)	begin
-										m_rdata= temp_rdata;
-										m_ready=PREADY;
+										PRDATA= temp_rdata;
+										PREADY=m_ready;
 										count_en='h0;
 									end
 									else begin
-										m_ready='h0;
-										m_rdata='hz;
+										PREADY='h0;
+										PRDATA='hz;
 									end
-									m_error=PSLVERR;
+									PSLVERR=m_error;
 								end
 
 								default: begin            			//PREADY always high from memory so this hasn't been handled
@@ -143,9 +143,9 @@ module apb_controller #(parameter addr_width=4, data_width=128, mem_data=8) (PCL
 									s_addr=PADDR;
 									s_write='hz;
 									s_wdata='hz;
-									m_rdata=PRDATA;
-									m_ready='h1;
-									m_error=PSLVERR;
+									PRDATA=m_rdata;
+									PREADY='h1;
+									PSLVERR=m_error;
 								end
 							
 							endcase
@@ -156,16 +156,16 @@ module apb_controller #(parameter addr_width=4, data_width=128, mem_data=8) (PCL
 							s_cs='h0;
 							count_en=0;
 							temp_addr=PADDR;
-							m_rdata='hz;
-							m_ready='h1;
-							m_error='h0;
+							PRDATA='hz;
+							PREADY='h1;
+							PSLVERR='h0;
 						end
 
 				default:begin										//IDLE state outputs are handled here
 							s_cs='h0;
-							m_rdata='hz;
-							m_ready='h0;
-							m_error='h0;
+							PRDATA='hz;
+							PREADY='h0;
+							PSLVERR='h0;
 						end
 
 			endcase
