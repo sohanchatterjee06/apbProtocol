@@ -1,20 +1,20 @@
 /*`include "apb_controller.sv"
 `include "asyncRam8k_8.sv"*/
 
-module apb_top (PCLK, PRESETn, PWRITE, PSELx, PENABLE, PADDR, PWDATA, m_rdata, m_ready, m_error);
-	input PCLK, PRESETn; 											//
+module apb_top  #(parameter addr_width=4, data_width=128, mem_data=8) (PCLK, PRESETn, PWRITE, PSELx, PENABLE, PADDR, PWDATA, PRDATA, PREADY, PSLVERR);
+	input PCLK, PRESETn; 											
 	input PWRITE, PSELx, PENABLE;  
-	input [apb_c.addr_width-1:0] PADDR;  
-	input [apb_c.data_width-1:0] PWDATA;
+	input [addr_width-1:0] PADDR;  
+	input [data_width-1:0] PWDATA;
 	
 
-	output [apb_c.data_width-1:0] m_rdata; 
-	output m_ready, m_error; 
+	output [data_width-1:0] PRDATA; 
+	output PREADY, PSLVERR; 
 
-	logic [apb_c.data_width-1:0] ram_PRDATA;
+	logic [mem_data-1:0] ram_PRDATA;
 	logic ram_PREADY, ram_PSLVERR;
-	logic [apb_c.addr_width+3:0]s_addr;
-	logic [apb_c.data_width-1:0] s_wdata;  
+	logic [addr_width+3:0]s_addr;
+	logic [mem_data-1:0] s_wdata;  
 	logic s_write, s_cs;
 
 	apb_controller #(.addr_width(4), .data_width(128), .mem_data(8))  apb_c ( .PCLK(PCLK), 
@@ -24,12 +24,12 @@ module apb_top (PCLK, PRESETn, PWRITE, PSELx, PENABLE, PADDR, PWDATA, m_rdata, m
 				                                                             .PENABLE(PENABLE), 
 				                                                             .PADDR(PADDR), 
 				                                                             .PWDATA(PWDATA), 
-				                                                             .PREADY(ram_PREADY), 
-				                                                             .PSLVERR(ram_PSLVERR), 
-				                                                             .PRDATA(ram_PRDATA), 
-				                                                             .m_rdata(m_rdata), 
-				                                                             .m_ready(m_ready), 
-				                                                             .m_error(m_error), 
+				                                                             .PREADY(PREADY), 
+				                                                             .PSLVERR(PSLVERR), 
+				                                                             .PRDATA(PRDATA), 
+				                                                             .m_rdata(ram_PRDATA), 
+				                                                             .m_ready(ram_PREADY), 
+				                                                             .m_error(ram_PSLVERR), 
 				                                                             .s_addr(s_addr), 
 				                                                             .s_wdata(s_wdata), 
 				                                                             .s_write(s_write), 
